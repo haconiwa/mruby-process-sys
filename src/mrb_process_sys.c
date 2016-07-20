@@ -16,11 +16,6 @@
 
 #define DONE mrb_gc_arena_restore(mrb, 0);
 
-static mrb_value mrb_process_sys_hello(mrb_state *mrb, mrb_value self)
-{
-  return mrb_str_new_lit(mrb, "Process::Sys !!1");
-}
-
 #define MRB_PROCESS_SYS_DEFINE_GET_FUNC(getter)                         \
   static mrb_value mrb_process_sys_ ## getter                           \
     (mrb_state *mrb, mrb_value self)                                    \
@@ -62,8 +57,6 @@ void mrb_mruby_process_sys_gem_init(mrb_state *mrb)
     process = mrb_define_module(mrb, "Process");
   }
   sys = mrb_define_module_under(mrb, process, "Sys");
-
-  mrb_define_module_function(mrb, sys, "hello", mrb_process_sys_hello, MRB_ARGS_NONE());
 
   mrb_process_sys_define_get_method(mrb, sys, getuid);
   mrb_process_sys_define_get_method(mrb, sys, getgid);
