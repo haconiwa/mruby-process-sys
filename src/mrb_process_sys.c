@@ -8,10 +8,13 @@
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "mruby.h"
-#include "mruby/data.h"
-#include "mruby/class.h"
+#include "mruby/array.h"
+#include "mruby/string.h"
+#include "mruby/error.h"
 #include "mrb_process_sys.h"
 
 #define DONE mrb_gc_arena_restore(mrb, 0);
@@ -42,6 +45,62 @@ MRB_PROCESS_SYS_DEFINE_SET_FUNC(setgid,  gid_t)
 MRB_PROCESS_SYS_DEFINE_SET_FUNC(seteuid, uid_t)
 MRB_PROCESS_SYS_DEFINE_SET_FUNC(setegid, gid_t)
 
+/* TODO: Introduce the Passwd/Group class */
+static mrb_value mrb_passwd_to_array(mrb_state *mrb, struct passwd *p)
+{
+  mrb_value res = mrb_ary_new_capa(mrb, 3);
+  mrb_ary_push(mrb, res, mrb_fixnum_value(p->pw_uid));
+  mrb_ary_push(mrb, res, mrb_fixnum_value(p->pw_gid));
+  mrb_ary_push(mrb, res, mrb_str_new_cstr(mrb, p->pw_name));
+  return res;
+}
+
+static mrb_value mrb_process_sys_getpwnam(mrb_state *mrb, mrb_value self)
+{
+  char *name;
+  mrb_bool detailed = FALSE;
+  mrb_get_args(mrb, "z|b", &name, &detailed);
+
+  struct passwd *p = getpwnam(name);
+  if(!p) {
+    mrb_sys_fail(mrb, "getpwnam failed.");
+  }
+
+  if(!detailed) {
+    return mrb_fixnum_value(p->pw_uid);
+  } else {
+    return mrb_passwd_to_array(mrb, p);
+  }
+}
+
+static mrb_value mrb_process_sys_getpwuid(mrb_state *mrb, mrb_value self)
+{
+  mrb_int uid;
+  mrb_bool detailed = FALSE;
+  mrb_get_args(mrb, "i|b", &uid, &detailed);
+
+  struct passwd *p = getpwuid((uid_t)uid);
+  if(!p) {
+    mrb_sys_fail(mrb, "getpwuid failed.");
+  }
+
+  if(!detailed) {
+    return mrb_str_new_cstr(mrb, p->pw_name);
+  } else {
+    return mrb_passwd_to_array(mrb, p);
+  }
+}
+
+static mrb_value mrb_process_sys_getgrnam(mrb_state *mrb, mrb_value self)
+{
+  return mrb_nil_value();
+}
+
+static mrb_value mrb_process_sys_getgrgid(mrb_state *mrb, mrb_value self)
+{
+  return mrb_nil_value();
+}
+
 #define mrb_process_sys_define_get_method(mrb, sys, getter) \
   mrb_define_module_function(mrb, sys, #getter, mrb_process_sys_ ## getter, MRB_ARGS_NONE())
 
@@ -50,7 +109,7 @@ MRB_PROCESS_SYS_DEFINE_SET_FUNC(setegid, gid_t)
 
 void mrb_mruby_process_sys_gem_init(mrb_state *mrb)
 {
-  struct RClass *process, *sys;
+  struct RClass *process, *sys, *pwgrp;
   if (mrb_class_defined(mrb, "Process")) {
     process = mrb_module_get(mrb, "Process");
   } else {
@@ -67,6 +126,13 @@ void mrb_mruby_process_sys_gem_init(mrb_state *mrb)
   mrb_process_sys_define_set_method(mrb, sys, setgid);
   mrb_process_sys_define_set_method(mrb, sys, seteuid);
   mrb_process_sys_define_set_method(mrb, sys, setegid);
+
+  pwgrp = mrb_define_module_under(mrb, process, "Pwgrp");
+
+  mrb_define_module_function(mrb, pwgrp, "getpwnam", mrb_process_sys_getpwnam, MRB_ARGS_ARG(1,1));
+  mrb_define_module_function(mrb, pwgrp, "getpwuid", mrb_process_sys_getpwuid, MRB_ARGS_ARG(1,1));
+  mrb_define_module_function(mrb, pwgrp, "getgrnam", mrb_process_sys_getgrnam, MRB_ARGS_ARG(1,1));
+  mrb_define_module_function(mrb, pwgrp, "getgruid", mrb_process_sys_getgrgid, MRB_ARGS_ARG(1,1));
 
   DONE;
 }
