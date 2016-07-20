@@ -8,6 +8,7 @@
 
 #include <unistd.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #include <pwd.h>
 #include <grp.h>
 
@@ -46,6 +47,37 @@ MRB_PROCESS_SYS_DEFINE_SET_FUNC(setuid,  uid_t)
 MRB_PROCESS_SYS_DEFINE_SET_FUNC(setgid,  gid_t)
 MRB_PROCESS_SYS_DEFINE_SET_FUNC(seteuid, uid_t)
 MRB_PROCESS_SYS_DEFINE_SET_FUNC(setegid, gid_t)
+
+static mrb_value mrb_process_sys___setgroups(mrb_state *mrb, mrb_value self)
+{
+  mrb_value argv;
+  int argc;
+  int i;
+  gid_t *groups;
+  mrb_get_args(mrb, "A", &argv);
+  argc = RARRAY_LEN( argv );
+  if(argc < 1) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "setgroups must have at least 1 gid");
+    return mrb_nil_value();
+  }
+
+  groups = (gid_t *)malloc(sizeof(gid_t) * (argc + 1));
+  for(i = 0; i < argc; i++) {
+    mrb_value gid = mrb_ary_ref( mrb, argv, i );
+    if(!mrb_fixnum_p(gid)) {
+      mrb_raise(mrb, E_ARGUMENT_ERROR, "must contain only integers");
+    }
+    *groups = (gid_t)mrb_fixnum(gid);
+    groups++;
+  }
+  groups -= i;
+
+  if(setgroups((size_t)argc, groups) < 0) {
+    mrb_sys_fail(mrb, "setgroups failed.");
+  }
+
+  return argv;
+}
 
 /* TODO: Introduce the Passwd/Group class */
 static mrb_value mrb_passwd_to_array(mrb_state *mrb, struct passwd *p)
@@ -162,6 +194,8 @@ void mrb_mruby_process_sys_gem_init(mrb_state *mrb)
   mrb_process_sys_define_set_method(mrb, sys, setgid);
   mrb_process_sys_define_set_method(mrb, sys, seteuid);
   mrb_process_sys_define_set_method(mrb, sys, setegid);
+
+  mrb_define_module_function(mrb, sys, "__setgroups", mrb_process_sys___setgroups, MRB_ARGS_REQ(1));
 
   pwgrp = mrb_define_module_under(mrb, process, "Pwgrp");
 

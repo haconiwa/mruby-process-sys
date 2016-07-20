@@ -1,4 +1,11 @@
 module Process
+  module Sys
+    def setgroups(*groups)
+      __setgroups groups
+    end
+    module_function :setgroups
+  end
+
   module GID
     extend self
     def eid; Sys.getegid; end
