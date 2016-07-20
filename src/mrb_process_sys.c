@@ -17,6 +17,8 @@
 #include "mruby/error.h"
 #include "mrb_process_sys.h"
 
+#pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
+
 #define DONE mrb_gc_arena_restore(mrb, 0);
 
 #define MRB_PROCESS_SYS_DEFINE_GET_FUNC(getter)                         \
