@@ -55,6 +55,14 @@ static mrb_value mrb_passwd_to_array(mrb_state *mrb, struct passwd *p)
   return res;
 }
 
+static mrb_value mrb_group_to_array(mrb_state *mrb, struct group *g)
+{
+  mrb_value res = mrb_ary_new_capa(mrb, 2);
+  mrb_ary_push(mrb, res, mrb_fixnum_value(g->gr_gid));
+  mrb_ary_push(mrb, res, mrb_str_new_cstr(mrb, g->gr_name));
+  return res;
+}
+
 static mrb_value mrb_process_sys_getpwnam(mrb_state *mrb, mrb_value self)
 {
   char *name;
@@ -93,12 +101,38 @@ static mrb_value mrb_process_sys_getpwuid(mrb_state *mrb, mrb_value self)
 
 static mrb_value mrb_process_sys_getgrnam(mrb_state *mrb, mrb_value self)
 {
-  return mrb_nil_value();
+  char *name;
+  mrb_bool detailed = FALSE;
+  mrb_get_args(mrb, "z|b", &name, &detailed);
+
+  struct group *g = getgrnam(name);
+  if(!g) {
+    mrb_sys_fail(mrb, "getgrnam failed.");
+  }
+
+  if(!detailed) {
+    return mrb_fixnum_value(g->gr_gid);
+  } else {
+    return mrb_group_to_array(mrb, g);
+  }
 }
 
 static mrb_value mrb_process_sys_getgrgid(mrb_state *mrb, mrb_value self)
 {
-  return mrb_nil_value();
+  mrb_int gid;
+  mrb_bool detailed = FALSE;
+  mrb_get_args(mrb, "i|b", &gid, &detailed);
+
+  struct group *g = getgrgid((gid_t)gid);
+  if(!g) {
+    mrb_sys_fail(mrb, "getgrgid failed.");
+  }
+
+  if(!detailed) {
+    return mrb_str_new_cstr(mrb, g->gr_name);
+  } else {
+    return mrb_group_to_array(mrb, g);
+  }
 }
 
 #define mrb_process_sys_define_get_method(mrb, sys, getter) \
@@ -132,7 +166,7 @@ void mrb_mruby_process_sys_gem_init(mrb_state *mrb)
   mrb_define_module_function(mrb, pwgrp, "getpwnam", mrb_process_sys_getpwnam, MRB_ARGS_ARG(1,1));
   mrb_define_module_function(mrb, pwgrp, "getpwuid", mrb_process_sys_getpwuid, MRB_ARGS_ARG(1,1));
   mrb_define_module_function(mrb, pwgrp, "getgrnam", mrb_process_sys_getgrnam, MRB_ARGS_ARG(1,1));
-  mrb_define_module_function(mrb, pwgrp, "getgruid", mrb_process_sys_getgrgid, MRB_ARGS_ARG(1,1));
+  mrb_define_module_function(mrb, pwgrp, "getgrgid", mrb_process_sys_getgrgid, MRB_ARGS_ARG(1,1));
 
   DONE;
 }
