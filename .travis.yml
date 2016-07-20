@@ -13,9 +13,11 @@ branches:
   only:
     - master
 
-before_install:
-  - sudo apt-get -qq update
-install:
-  - sudo apt-get -qq install rake bison git gperf
+addons:
+  apt:
+    packages:
+      - rake
+      - bison
+      - git
 script:
   - rake test
