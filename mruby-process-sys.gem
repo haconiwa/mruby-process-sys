@@ -1,0 +1,6 @@
+name: mruby-process-sys
+description: Process::Sys class
+author: Uchio Kondo
+website: https://github.com/haconiwa/mruby-process-sys
+protocol: git
+repository: https://github.com/haconiwa/mruby-process-sys.git
