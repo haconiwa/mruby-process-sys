@@ -20,4 +20,5 @@ addons:
       - bison
       - git
 script:
+  - rake format
   - rake test
