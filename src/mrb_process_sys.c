@@ -33,7 +33,7 @@
 #define MRB_PROCESS_SYS_DEFINE_SET_FUNC(setter, typename)                                                              \
   static mrb_value mrb_process_sys_##setter(mrb_state *mrb, mrb_value self)                                            \
   {                                                                                                                    \
-    int __id;                                                                                                          \
+    mrb_int __id;                                                                                                      \
     mrb_get_args(mrb, "i", &__id);                                                                                     \
     return mrb_fixnum_value((int)setter((typename)__id));                                                              \
   }
@@ -51,7 +51,7 @@ MRB_PROCESS_SYS_DEFINE_SET_FUNC(setegid, gid_t)
 static mrb_value mrb_process_sys___setgroups(mrb_state *mrb, mrb_value self)
 {
   mrb_value argv;
-  int argc;
+  mrb_int argc;
   int i;
   gid_t *groups;
   mrb_get_args(mrb, "A", &argv);
