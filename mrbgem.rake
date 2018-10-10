@@ -4,4 +4,5 @@ MRuby::Gem::Specification.new('mruby-process-sys') do |spec|
   spec.version = '0.1.0'
 
   spec.add_dependency 'mruby-process'
+  spec.add_dependency 'mruby-metaprog', core: 'mruby-metaprog'
 end
